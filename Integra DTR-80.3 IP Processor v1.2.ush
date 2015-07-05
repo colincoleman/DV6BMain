@@ -21,7 +21,7 @@
   Name=Integra DTR-80.3 IP Volume/Tuner Control v1.2
   SmplCName=Integra DTR-80.3 IP Processor v1.2.usp
   Code=1
-  SysRev5=3.090
+  SysRev5=4.000
   SMWRev=2.02.05
   InputCue1=Volume_Up
   InputSigType1=Digital

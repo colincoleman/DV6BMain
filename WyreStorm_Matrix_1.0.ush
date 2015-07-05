@@ -17,6 +17,8 @@
   Name=WyreStorm_Matrix_1.0
   SmplCName=WyreStorm_Matrix_1.0.usp
   Code=1
+  SysRev5=4.000
+  SMWRev=2.02.05
   InputList2Cue1=Rx$
   InputList2SigType1=Serial
   InputList2Cue2=ModelNumber

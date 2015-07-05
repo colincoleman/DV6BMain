@@ -17,7 +17,7 @@
   Name=Loewe RS-232 Input Switching and Power Control
   SmplCName=loewe_rs-232.usp
   Code=1
-  SysRev5=3.090
+  SysRev5=4.000
   SMWRev=2.02.05
   InputCue1=INPUT_AV1
   InputSigType1=Digital
