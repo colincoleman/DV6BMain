@@ -1,0 +1,449 @@
+/*******************************************************************************************
+SIMPL+ Module Information
+*****************************************************************************************/
+
+/*
+Dealer Name: WYRESTORM	
+System Name: MX
+System Number: 0102,0204,0404,0408,8080
+Programmer: Janus Technology
+Comments:
+*/
+
+
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+*******************************************************************************************/
+
+
+string_input Rx$[256];
+analog_input ModelNumber;
+analog_input Output[16];
+
+string_output Tx$; 
+string_output Debug$;
+analog_output OutputValue[16];
+
+#define_constant MX0402 0
+#define_constant MX0404 7
+#define_constant MX0408 15
+#define_constant MX0808 23
+#define_constant MX_BINARY_MODELS 50
+
+/*******************************************************************************************
+  Global Variables
+*******************************************************************************************/
+integer g_model,         //Holds start Postion in lookup Table
+        g_modelOutput,   //number of Output on the Model
+        g_modelInput;    //number of Input on the Model
+
+   
+string g_lastCmd[256],          //Last Command
+       g_mxBuffer[256],         //Hold Awaiting Commands
+       g_tempCmd[256],          //Next Command to be sent 
+       g_feedBack[256],         //Buffers FeedBack
+       MX_HDMI_CODES[31][10];   //Lookup Hex Command
+
+/*******************************************************************************************
+  Functions
+*******************************************************************************************/
+function Init_MX_HDMI_CODES()
+{
+  MX_HDMI_CODES[0] = "\x17\x12\x59\x08\x00\x00\x00\x00\x1B\x11";
+  MX_HDMI_CODES[1] = "\x5E\x06\x05\x03\x00\x00\x00\x00\x55\x48"; 
+  MX_HDMI_CODES[2] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+  MX_HDMI_CODES[3] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+  MX_HDMI_CODES[4] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+  MX_HDMI_CODES[5] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"; 
+  MX_HDMI_CODES[6] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+  MX_HDMI_CODES[7] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+      
+  MX_HDMI_CODES[8]  = "\x09\x1D\x1F\x0D\x00\x00\x00\x00\x57\x41"; 
+  MX_HDMI_CODES[9]  = "\x17\x12\x59\x08\x00\x00\x00\x00\x1B\x11";
+  MX_HDMI_CODES[10] = "\x5E\x06\x05\x03\x00\x00\x00\x00\x55\x48"; 
+  MX_HDMI_CODES[11] = "\x18\x44\x0F\x51\x00\x00\x00\x00\x07\x40";
+  MX_HDMI_CODES[12] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+  MX_HDMI_CODES[13] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"; 
+  MX_HDMI_CODES[14] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+  MX_HDMI_CODES[15] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+  
+  MX_HDMI_CODES[16] = "\x09\x1D\x1F\x0D\x00\x00\x00\x00\x61\x60"; 
+  MX_HDMI_CODES[17] = "\x19\x1B\x11\x15\x00\x00\x00\x00\x63\x62";
+  MX_HDMI_CODES[18] = "\x17\x12\x59\x08\x00\x00\x00\x00\x65\x64"; 
+  MX_HDMI_CODES[19] = "\x50\x55\x48\x4A\x00\x00\x00\x00\x67\x66";
+  MX_HDMI_CODES[20] = "\x5E\x06\x05\x03\x00\x00\x00\x00\x69\x68"; 
+  MX_HDMI_CODES[21] = "\x47\x07\x40\x02\x00\x00\x00\x00\x71\x70";
+  MX_HDMI_CODES[22] = "\x18\x44\x0F\x51\x00\x00\x00\x00\x73\x72"; 
+  MX_HDMI_CODES[23] = "\x0A\x1E\x0E\x1A\x00\x00\x00\x00\x75\x74";
+    
+  MX_HDMI_CODES[24] = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09"; 
+  MX_HDMI_CODES[25] = "\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19";
+  MX_HDMI_CODES[26] = "\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29"; 
+  MX_HDMI_CODES[27] = "\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39";
+  MX_HDMI_CODES[28] = "\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49"; 
+  MX_HDMI_CODES[29] = "\x50\x51\x52\x53\x54\x55\x56\x57\x58\x59";
+  MX_HDMI_CODES[30] = "\x60\x61\x62\x63\x64\x65\x66\x67\x68\x69"; 
+  MX_HDMI_CODES[31] = "\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79";
+}
+ 
+//Debugger
+string_function DebugOut( string str )
+{
+  Debug$ = str;
+}
+                   
+/*******************************************************************************************
+  Decoding FeedBack
+*******************************************************************************************/
+
+// if the feedback is a multiple or Single change MX0816 MX1616
+function DecodeFeedBackMethodOne( string switchFeedBack )
+{
+  integer b1;
+  integer b2;
+  integer outputFeedback; 
+  integer inputFeedBack;
+  
+  outputFeedback = ((byte( switchFeedBack, 1 ) << 2) & 0x1C) | ((byte( switchFeedBack, 2 ) >> 5) & 0x03);
+  inputFeedBack = (byte( switchFeedBack, 2 ) & 0x1F);
+  OutputValue[outputFeedback + 1] = inputFeedBack + 1;
+}
+
+// if the feedback is a single change( minus the input/ read model manual) MX0402,MX0404,MX0408
+function DecodeFeedBackMethodTwo( string switchFeedBack, integer minusNumber ) 
+{
+  integer x;
+  integer outputFeedback;
+  integer inputFeedBack;
+  string cTempHolder[10];
+  
+  x = 1;
+  while (x != 0)
+  {
+    x = find( "s", switchFeedBack, 1 );
+    if (x != 0)
+    {
+      cTempHolder = remove( "s", switchFeedBack, 1 );
+      if (len( cTempHolder ) = 0)
+      {
+        cTempHolder = switchFeedBack;
+        switchFeedBack = "";
+      }
+      cTempHolder = left( cTempHolder, (len ( cTempHolder ) - 1 ) );
+      outputFeedback = atoi( left( cTempHolder, 1 ) );
+      inputFeedBack = minusNumber - atoi( right( cTempHolder, 1 ) );
+      OutputValue[outputFeedback] = inputFeedBack;
+    }
+  }   
+}
+
+// if the feedback is a single change MX0808
+function DecodeFeedBackMethodThree( string switchFeedBack ) 
+{
+  integer outputFeedback;
+  integer inputFeedBack;
+  string cTempHolder[10];
+  
+  cTempHolder = remove( "s", switchFeedBack, 1 );
+  cTempHolder = left( switchFeedBack, (len( switchFeedBack ) - 1 ) );  
+  outputFeedback = atoi( left( cTempHolder, 1 ) );
+  inputFeedBack = atoi( mid( cTempHolder, 2, 1 ) );
+  OutputValue[outputFeedback] = inputFeedBack; 
+}
+             
+// if the feedback is a multiple change MX0808
+function DecodeFeedBackMethodFour( string switchFeedBack ) 
+{
+  integer inputFeedBack; 
+  integer pos;
+  integer count;
+  string cTempHolder[10];
+  
+  count = 0;
+  DebugOut( itoa( len( switchFeedBack ) ) );
+  for (pos = 2 to len( switchFeedBack ))
+  {
+    count = count + 1;
+    inputFeedBack = atoi( mid( switchFeedBack, pos, 1 ) );
+    OutputValue[count] = inputFeedBack; 
+    if (pos % 3 = 0)
+      pos = pos + 1;
+  }
+}
+ 
+ // if the feedback is a multiple change MX0402,MX0404,MX0408
+function DecodeFeedBackMethodFive( string switchFeedBack, integer minusNumber ) 
+{
+  integer inputFeedBack;
+  integer pos;
+  integer count;
+  string cTempHolder[10];
+  
+  count = 0;
+  for (pos = 2 to len( switchFeedBack ))
+  {
+    count = count + 1;
+    inputFeedBack = minusNumber - atoi( mid( switchFeedBack, pos, 1 ) );
+    OutputValue[count] = inputFeedBack;
+    if (pos % 3 = 0)
+      pos = pos + 1;
+  }
+}
+   
+function FeedBackMX0402_MX0404_MX0408()  
+{
+  string feedbackSwitch[256];
+  
+  while (g_feedBack <> "")
+  {
+    feedbackSwitch = remove( "\x0A", g_feedBack, 1 );
+    DebugOut( feedbackSwitch );
+    if (len( feedbackSwitch ) = 0)
+      break;
+    else if (len( feedbackSwitch ) = 5)
+      call DecodeFeedBackMethodTwo( feedbackSwitch, 4 ); 
+    else 
+      call DecodeFeedBackMethodfive( feedbackSwitch, 4 );         
+  }
+}
+
+function FeedBackMX0808()  
+{
+  string feedbackSwitch[256];
+  
+  while (g_feedBack <> "")
+  {
+    feedbackSwitch = remove( "\x0A", g_feedBack, 1 );
+    if (len( feedbackSwitch ) = 0)
+      break;
+    else if (len( feedbackSwitch ) = 5)
+      call DecodeFeedBackMethodThree( feedbackSwitch ); 
+    else
+      call DecodeFeedBackMethodFour( feedbackSwitch );         
+  }         
+}
+
+function FeedBackMX0816_MX1616() 
+{
+  string feedbackSwitch[256];
+
+  while (g_feedBack <> "")
+  {
+    feedbackSwitch = remove( "\x0A", g_feedBack, 1 );
+    if (len( feedbackSwitch ) = 0)
+       break;
+    call decodeFeedBackMethodOne( feedbackSwitch );    
+  }
+}
+
+
+
+/*******************************************************************************************
+ MX BINANY MODELS 
+ *******************************************************************************************/
+//Puts Command in Final Format                   
+string_function FinaliseCommand( string mxCommand, integer commandId )
+{
+  string s[10];
+  integer b1;
+  integer b2;
+  
+  b1 = byte( mxCommand, 1 ) | 0x80 | (commandId << 3);
+  b2 = byte( mxCommand, 2 ) | 0x80;
+  s = chr( b1 ) + chr( b2 ) + chr( b1 ^ b2 ^ 0x0A ^ 0xFF ) + "\x0A";
+  return (s);
+}
+
+
+//change Input
+//bit 1 (0000(first 3bits of 5 to the left bit of input))
+//bit 2 (1(last to bits of 5 of input)(output 5 of 5)) 
+string_function CreateSinglePortSwitch( integer inputPort, integer outputPort )
+{
+  integer b1;
+  integer b2;
+  string s[10];
+  
+  b1 = ((outputPort - 1) >> 2);
+  b2 = (((outputPort - 1) & 0x03) << 5) | (inputPort - 1);
+  s = chr( b1 ) + chr( b2 );
+  s = FinaliseCommand( s, 0 );
+  return (s);
+}
+  
+//request status
+//bit 1 (10001000)
+//bit 2 (10000000) 
+string_function CreateCurrentStatusCommand()
+{
+  integer b1;
+  integer b2;
+  string s[10];
+
+  b1 = (0 >> 2);
+  b2 = ((0 & 0x03) << 5);
+  s = chr( b1 ) + chr( b2 );
+  s = FinaliseCommand( s, 1 );
+  return (s);
+}
+
+/*******************************************************************************************
+ Sending
+ *******************************************************************************************/  
+function SendToMX( string sendString )
+{  
+  if (g_lastCmd = "")
+  {
+    g_lastCmd = sendString;
+    wait (100, SEND_TIMEOUT)
+    { 
+      cancelwait( SEND_TIMEOUT );
+      if (g_model = MX_BINARY_MODELS)
+        g_tempCmd = remove( "\x0A", g_mxBuffer, 1 );
+      else
+        g_tempCmd = remove( "\n", g_mxBuffer, 1 );
+      g_lastCmd = "";
+      if (len( g_tempCmd ) > 0)
+        call sendToMX( g_tempCmd );    
+    }                     
+    Tx$ = sendString;
+  }
+  else
+  {
+    g_mXBuffer = g_mXBuffer + sendString;
+  }
+}
+   
+/*******************************************************************************************
+  Commands 
+*******************************************************************************************/
+//Path depend on type of model for changing input 
+integer_function SendSwitchSinglePortCommand( integer inputCode, integer outputCode )
+{ 
+  integer code;
+  string tempString[10];
+  string cmdMessage[256];
+  
+  if (g_model = MX_BINARY_MODELS) //MX0816 OR MX1616
+  {
+    cmdMessage = "";
+    cmdMessage = CreateSinglePortSwitch( inputCode, outputCode );
+    call SendToMX( cmdMessage );
+  }
+  else //MX0402, MX0404, MX0408
+  {
+    code = byte( MX_HDMI_CODES[outputCode + g_model], inputCode );
+    makestring( tempString, "%02x", code );
+    cmdMessage = "cir " + tempString + "\n";
+    call sendToMX( cmdMessage );
+  }
+}
+ 
+//Path depend on type of model for requesting status 
+function SendSwitchCurrentStatusCommand()
+{
+  string mxCmd[5];
+  string cmd[256];
+  
+  if (g_model = MX_BINARY_MODELS) //MX0816 OR MX1616
+  {
+    mxCmd = CreateCurrentStatusCommand();
+    call sendToMX( mxCmd );
+  }
+  else  //MX0402, MX0404, MX0408     
+  {
+    cmd = "bc \n";
+    sendToMX( cmd );
+  }
+}
+   
+/*******************************************************************************************
+  Event Handlers
+*******************************************************************************************/
+change ModelNumber
+{
+  switch(ModelNumber)
+  {
+    case (0):
+    {
+      g_model = MX0402;
+      g_modelOutput = 2;
+      g_modelInput = 4;
+    }
+    case (1):
+    {
+      g_model = MX0404;
+      g_modelOutput = 4;
+      g_modelInput = 4;
+    }
+    case (2):
+    {
+      g_model = MX0408;
+      g_modelOutput = 8;
+      g_modelInput = 4;
+    }
+    case (3):
+    {
+      g_model = MX0808;
+      g_modelOutput = 8;
+      g_modelInput = 8;
+    }
+    case (4): 
+    {
+      g_model = MX_BINARY_MODELS;
+      g_modelOutput = 16;
+      g_modelInput = 8;
+      }
+    case (5):
+    {
+      g_model = MX_BINARY_MODELS;
+      g_modelOutput = 16;
+      g_modelInput = 16;
+    }
+  }
+}
+
+change Output
+{
+  integer outputPort,
+          inputPort;
+          
+  outputPort = getlastmodifiedarrayindex();
+  inputPort = Output[outputPort];
+  if ((outputPort > 0 && outputPort <= g_modelOutput) && (inputPort > 0 && inputPort <= g_modelInput))
+    call SendSwitchSinglePortCommand( inputPort, outputPort );
+  else 
+    DebugOut( "invalid Input or Output" );
+}
+
+change Rx$        
+{
+  g_feedBack = g_feedBack + RX$;
+  switch (ModelNumber) 
+  {  
+    case (0):  // MX0402
+      call FeedBackMX0402_MX0404_MX0408();
+    case (1):  // MX0404
+      call FeedBackMX0402_MX0404_MX0408();
+    case (2):  // MX0408
+      call FeedBackMX0402_MX0404_MX0408();
+    case (3):  // MX0808
+      call FeedBackMX0808();
+    case (4):  // MX0816
+      call FeedBackMX0816_MX1616();
+    case (5):  // MX1616
+      call FeedBackMX0816_MX1616();
+   }
+}          
+
+/*******************************************************************************************
+  Main()
+*******************************************************************************************/
+function Main()
+{
+  g_mXBuffer = "";
+  g_lastCmd = "";
+  g_feedBack = "";
+  call Init_MX_HDMI_CODES();
+  call SendSwitchCurrentStatusCommand();
+}

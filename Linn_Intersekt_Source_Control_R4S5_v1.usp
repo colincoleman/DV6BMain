@@ -1,0 +1,79 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+*******************************************************************************************/
+/*
+Dealer Name:
+System Name:
+System Number:
+Programmer:
+Comments:
+*/
+
+/*******************************************************************************************
+  Compiler Directives
+  (Uncomment and declare compiler directives as needed)
+*******************************************************************************************/
+#SYMBOL_NAME "Linn Intersekt R4S5 Control"
+#HINT "Control Source Selection To 1 Room"
+#DEFINE_CONSTANT TRUE 1
+#DEFINE_CONSTANT FALSE 0
+// #CATEGORY "" 
+// #DEFAULT_VOLATILE
+// #DIGITAL_EXPAND 
+// #ANALOG_SERIAL_EXPAND 
+// #OUTPUT_SHIFT 
+#DEFAULT_NONVOLATILE
+#ENABLE_STACK_CHECKING
+/*
+#HELP_BEGIN
+   (add additional lines of help lines)
+#HELP_END
+*/
+
+/*******************************************************************************************
+  Include Libraries
+  (Uncomment and include additional libraries as needed)
+*******************************************************************************************/
+// #CRESTRON_LIBRARY ""
+// #USER_LIBRARY ""
+
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+  (Uncomment and declare inputs and outputs as needed)
+*******************************************************************************************/
+DIGITAL_INPUT SRCOFF, SRC1, SRC2, SRC3, SRC4, SRC5;
+STRING_INPUT ROOM[1];
+
+STRING_OUTPUT Tx$;
+
+PUSH SRCOFF
+{
+    Tx$ = "["+ROOM+"MLIS=D]";
+}
+
+PUSH SRC1
+{
+    Tx$ = "["+ROOM+"MLIS1]";
+}
+
+PUSH SRC2
+{
+    Tx$ = "["+ROOM+"MLIS2]";
+}
+                         
+PUSH SRC3
+{
+    Tx$ = "["+ROOM+"MLIS3]";
+}
+                        
+PUSH SRC4
+{
+    Tx$ = "["+ROOM+"MLIS4]";
+}
+ 
+PUSH SRC5
+{
+    Tx$ = "["+ROOM+"MLIS5]";
+}
+

@@ -1,0 +1,341 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+*******************************************************************************************/
+/*
+Dealer Name: 	Kontrapunkt AS
+System Name: 	Loewe RS-232 Input select and Power Control 
+System Number:
+Programmer: 	Lars Ernestus
+Comments:
+Version 1: 		18.08.2007
+Change Log:
+*/
+
+#SYMBOL_NAME "Loewe RS-232 Input Switching and Power Control"
+#HINT "RS-232 Input Select and Power Control for Loewe TV's"
+
+#DEFINE_CONSTANT TRUE 1 
+#DEFINE_CONSTANT FALSE 0
+#DEFINE_CONSTANT SEL_AV1 		"prog -1\n"
+#DEFINE_CONSTANT SEL_AV2 		"prog -3\n"
+#DEFINE_CONSTANT SEL_AVS 		"prog -4\n"
+#DEFINE_CONSTANT SEL_VGA  		"prog -5\n"
+#DEFINE_CONSTANT SEL_HDMI1 		"prog -6\n"
+#DEFINE_CONSTANT SEL_HDMI2 		"prog -7\n"
+#DEFINE_CONSTANT SEL_COMP_IN1 	"prog -8\n"
+#DEFINE_CONSTANT SEL_COMP_IN2 	"prog -9\n"
+#DEFINE_CONSTANT SEL_AUDIO_IN1 	"prog -10\n"
+#DEFINE_CONSTANT SEL_AUDIO_IN2 	"prog -11\n"
+#DEFINE_CONSTANT SEL_AUDIO_DIG 	"prog -12\n"
+#DEFINE_CONSTANT SEL_OK			"ir 0 0 38 3\n"
+#DEFINE_CONSTANT DZERO			"ir 0 0 0 3\n"
+#DEFINE_CONSTANT DONE			"ir 0 0 1 3\n"
+#DEFINE_CONSTANT DTWO			"ir 0 0 2 3\n"
+#DEFINE_CONSTANT DTHREE			"ir 0 0 3 3\n"
+#DEFINE_CONSTANT DFOUR			"ir 0 0 4 3\n"
+#DEFINE_CONSTANT DFIVE			"ir 0 0 5 3\n"
+#DEFINE_CONSTANT DSIX			"ir 0 0 6 3\n"
+#DEFINE_CONSTANT DSEVEN			"ir 0 0 7 3\n"
+#DEFINE_CONSTANT DEIGHT			"ir 0 0 8 3\n"
+#DEFINE_CONSTANT DNINE			"ir 0 0 9 3\n"
+#DEFINE_CONSTANT CUR_LEFT		"ir 0 0 17 3\n"
+#DEFINE_CONSTANT CUR_RIGHT		"ir 0 0 16 3\n"
+#DEFINE_CONSTANT CUR_UP			"ir 0 0 32 3\n"
+#DEFINE_CONSTANT CUR_DOWN		"ir 0 0 33 3\n"
+#DEFINE_CONSTANT CMENU			"ir 0 0 11 3\n"
+#DEFINE_CONSTANT CEPG			"ir 0 0 15 3\n"
+#DEFINE_CONSTANT CGREEN			"ir 0 0 26 3\n"
+#DEFINE_CONSTANT CRED			"ir 0 0 27 3\n"
+#DEFINE_CONSTANT CBLUE			"ir 0 0 40 3\n"
+#DEFINE_CONSTANT CYELLOW		"ir 0 0 43 3\n"
+#DEFINE_CONSTANT CEND			"ir 0 0 63 3\n"
+#DEFINE_CONSTANT CINFO			"ir 0 0 75 3\n"
+#DEFINE_CONSTANT POWER_ON 		"power tv\n"
+#DEFINE_CONSTANT POWER_OFF 		"power off\n"
+
+//#CATEGORY "MISC" 
+#DEFAULT_NONVOLATILE
+#ENABLE_STACK_CHECKING
+/*
+#HELP_BEGIN
+   (add additional lines of help lines)
+#HELP_END
+*/
+DIGITAL_INPUT 	INPUT_AV1, INPUT_AV2, INPUT_AV3, INPUT_AVS;
+DIGITAL_INPUT 	INPUT_VGA, INPUT_HDMI1, INPUT_HDMI2, INPUT_COMP_IN1; 
+DIGITAL_INPUT 	INPUT_COMP_IN2, INPUT_AUDIO_IN1, INPUT_AUDIO_IN2, INPUT_AUDIO_DIG;
+DIGITAL_INPUT	ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE;
+DIGITAL_INPUT	CURSOR_LEFT, CURSOR_RIGHT, CURSOR_UP, CURSOR_DOWN, MENU, EPG, END, INFO;
+DIGITAL_INPUT	GREEN, RED, BLUE, YELLOW;	
+DIGITAL_INPUT 	STANDBY_ON, STANDBY_OFF;
+DIGITAL_INPUT	TV_CH_PLUS, TV_CH_MINUS, OK;
+
+
+STRING_INPUT 	Rx[128];
+STRING_INPUT	TV_CH_MAX[8];
+
+DIGITAL_OUTPUT	ACK;
+
+STRING_OUTPUT   Tx;
+
+Integer			iChannelMax, iChannel;
+String  		sChannelMax[4], sChannel[4];
+
+Integer_Function getTvChannelPlus()
+{
+
+	if (iChannel < iChannelMax)
+	{
+		iChannel = iChannel + 1;
+	}
+	else if (iChannel = iChannelMax)
+	{
+    	iChannel = 1;
+	}   
+   
+	Return (iChannel);
+}
+ 
+Integer_Function getTvChannelMinus()
+{
+	if (iChannel = 1)
+	{
+		iChannel = iChannelMax;
+	}
+	else if (iChannel <= iChannelMax)
+	{
+    	iChannel = iChannel - 1;
+	}   
+    
+	Return (iChannel);
+}
+
+
+PUSH STANDBY_OFF
+{
+	Tx = POWER_ON;
+}
+ 
+PUSH STANDBY_ON
+{
+	Tx = POWER_OFF;
+}
+
+PUSH INPUT_AV1
+{
+	Tx = SEL_AV1;
+}
+
+PUSH INPUT_AV2
+{
+	Tx = SEL_AV2;
+}
+
+PUSH INPUT_AVS
+{
+	Tx = SEL_AVS;
+}
+ 
+PUSH INPUT_VGA
+{
+	Tx = SEL_VGA;
+}
+ 
+PUSH INPUT_HDMI1
+{
+	Tx = SEL_HDMI1;
+}
+
+PUSH INPUT_HDMI2
+{
+	Tx = SEL_HDMI2;
+}
+ 
+PUSH INPUT_COMP_IN1
+{
+	Tx = SEL_COMP_IN1;
+}
+
+PUSH INPUT_COMP_IN2
+{
+	Tx = SEL_COMP_IN2;
+}
+
+PUSH INPUT_AUDIO_IN1
+{
+	Tx = SEL_AUDIO_IN1;
+}
+
+PUSH INPUT_AUDIO_IN2
+{
+	Tx = SEL_AUDIO_IN2;
+}
+
+PUSH TV_CH_PLUS
+{
+	integer ch;
+
+	ch = getTvChannelPlus();
+
+	Tx = "prog " + ITOA(ch) + "\n";
+}
+
+PUSH TV_CH_MINUS
+{
+	integer ch;
+
+	ch = getTvChannelMinus();
+
+	Tx = "prog " + ITOA(ch) + "\n";
+}
+
+
+CHANGE Rx
+{
+    ACK = TRUE;
+	DELAY(1);
+	ACK = FALSE;
+}
+
+PUSH OK
+{
+	Tx = SEL_OK;
+}
+
+PUSH ZERO
+{
+ 	Tx = DZERO; 
+}
+
+
+PUSH ONE
+{
+ 	Tx = DONE; 
+}
+
+
+PUSH TWO
+{
+ 	Tx = DTWO; 
+}
+
+
+PUSH THREE
+{
+ 	Tx = DTHREE; 
+}
+
+
+PUSH FOUR
+{
+ 	Tx = DFOUR; 
+}
+
+
+PUSH FIVE
+{
+ 	Tx = DFIVE; 
+}
+
+
+PUSH SIX
+{
+ 	Tx = DSIX; 
+}
+
+
+PUSH SEVEN
+{
+ 	Tx = DSEVEN; 
+}
+
+
+PUSH EIGHT
+{
+ 	Tx = DEIGHT; 
+}
+ 
+
+PUSH NINE
+{
+ 	Tx = DNINE; 
+}
+ 
+
+PUSH CURSOR_LEFT
+{
+ 	Tx = CUR_LEFT; 
+}
+
+PUSH CURSOR_RIGHT
+{
+ 	Tx = CUR_RIGHT; 
+}
+
+PUSH CURSOR_UP
+{
+ 	Tx = CUR_UP; 
+}
+ 
+PUSH CURSOR_DOWN
+{
+ 	Tx = CUR_DOWN; 
+}
+
+PUSH CURSOR_LEFT
+{
+ 	Tx = CUR_LEFT; 
+}
+
+PUSH MENU
+{
+ 	Tx = CMENU; 
+}
+
+PUSH EPG
+{
+ 	Tx = CEPG; 
+}
+
+PUSH GREEN
+{
+ 	Tx = CGREEN; 
+}
+
+PUSH RED
+{
+ 	Tx = CRED; 
+}
+
+
+PUSH BLUE
+{
+ 	Tx = CBLUE; 
+}
+
+PUSH YELLOW
+{
+ 	Tx = CYELLOW; 
+}
+
+PUSH END
+{
+ 	Tx = CEND; 
+}
+
+PUSH INFO
+{
+ 	Tx = CINFO; 
+}
+
+
+Function Main()
+{    
+
+	WaitForInitializationComplete();
+                    
+	sChannelMax = TV_CH_MAX;			//Read in maximum available TV channel
+	iChannelMax = ATOI(sChannelMax);	//Cast string to integer
+	iChannel = 1;
+
+}
