@@ -6,3 +6,5 @@
 SPlsWork/
 *.smw.ASV
 *.sm2
+*.smft
+.DS_Store
